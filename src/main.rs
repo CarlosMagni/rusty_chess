@@ -2,65 +2,45 @@
 
 mod chess_board;
 mod minimax;
+mod zobrist;
+mod evaluation;
+mod transposition_table;
 
 
 use std::{thread,time};
 use std::io;
-use chess_board::{Color, PieceType,Position};
+use chess_board::Position;
+use std::time::Instant;
+
 
 use crate::chess_board::{ChessBoard, ChessMove};
 
 fn main () {
-    let five_sec = time::Duration::from_millis(2000);
+    let two_sec = time::Duration::from_millis(2000);
     let mut chess_board = chess_board::ChessBoard::new();
     loop {
-        print_board(&chess_board);
+        ChessBoard::print_board(&chess_board);
 
         println!("Au tour des Blancs. Entrez votre mouvement (format attendu : 'x y x_dest y_dest') : ");
         let (from_pos, to_pos) = read_user_input();
         let chess_move = ChessMove::OrdinaryMove  { from : from_pos, to : to_pos};
         ChessBoard::update_board(&mut chess_board, chess_move);
 
-        print_board(&chess_board); // Assurez-vous que cette fonction existe et est correctement importée
+        ChessBoard::print_board(&chess_board); // Assurez-vous que cette fonction existe et est correctement importée
         println!("turn : {:?}",ChessBoard::get_turn(&chess_board));
-        thread::sleep(five_sec);
-        let computer_move =  minimax::start_minimax(&chess_board).expect("should be a move");
+        thread::sleep(two_sec);
+        let start_time = Instant::now();
+        let computer_move =  minimax::Minimax::start_minimax(&chess_board).expect("should be a move");
+        let duration = start_time.elapsed();
         println!("the Black bot choose : {:?}",computer_move);
+        println!("Minimax a pris {:?} pour s'exécuter.", duration);
         ChessBoard::update_board(&mut chess_board, computer_move);
     }
 
     
 }
 
-fn print_board(chess_board: &ChessBoard) {
-    println!("  a b c d e f g h"); // En-tête pour les colonnes
-    for (i, row) in ChessBoard::get_board(&chess_board).iter().enumerate().rev() {
-        print!("{} ", i+1); // Affiche le numéro de rangée avant chaque ligne, en commençant par 8
-        for piece_option in row {
-            let piece_symbol = match piece_option {
-                Some(piece) => match (piece.piece_type, piece.color) {
-                    (PieceType::Pawn, Color::White) => "P",
-                    (PieceType::Pawn, Color::Black) => "p",
-                    (PieceType::Knight, Color::White) => "N",
-                    (PieceType::Knight, Color::Black) => "n",
-                    (PieceType::Bishop, Color::White) => "B",
-                    (PieceType::Bishop, Color::Black) => "b",
-                    (PieceType::Rook, Color::White) => "R",
-                    (PieceType::Rook, Color::Black) => "r",
-                    (PieceType::Queen, Color::White) => "Q",
-                    (PieceType::Queen, Color::Black) => "q",
-                    (PieceType::King, Color::White) => "K",
-                    (PieceType::King, Color::Black) => "k",
-                    _ => ".",
-                },
-                None => ".",
-            };
-            print!("{} ", piece_symbol);
-        }
-        println!(" {}",i+1); // Affiche le numéro de rangée après chaque ligne
-    }
-    println!("  a b c d e f g h"); // Pied de page pour les colonnes
-}
+
 
 fn read_user_input() -> (Position, Position) {
     let mut input = String::new();
